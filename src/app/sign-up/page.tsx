@@ -13,9 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { signUpSchema } from "@/app/sign-up/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signInSchema } from "@/app/sign-in/schema";
 import {
   Form,
   FormControl,
@@ -24,17 +22,61 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { getRegisterCaptcha, signUp } from "@/lib/service/user";
+import { signUpSchema } from "@/lib/schemas/user";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function SignUp() {
+  const router = useRouter();
+
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
   });
 
-  function onSubmit(values: z.infer<typeof signInSchema>) {
+  async function onSubmit(values: z.infer<typeof signUpSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     console.log(values);
+    try {
+      await signUp(values);
+      router.push("/sign-in");
+    } catch (error) {
+      console.error(error);
+    }
   }
+
+  // 验证码重发计时
+  const COUNTDOWN = 60;
+  const [countdown, setCountdown] = useState(0);
+  let timer: NodeJS.Timeout;
+
+  async function handleSendRegisterCaptcha() {
+    if (countdown !== 0) {
+      return;
+    }
+    await getRegisterCaptcha(form.getValues().email);
+    setCountdown(COUNTDOWN);
+
+    //   开始倒计时
+    timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev === 0) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
+  //  清除定时器
+  useEffect(() => {
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
   return (
     <Card className="mx-auto max-w-sm">
       <CardHeader>
@@ -61,7 +103,7 @@ export default function SignUp() {
                 />
                 <FormField
                   control={form.control}
-                  name="nickname"
+                  name="nickName"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>昵称</FormLabel>
@@ -136,7 +178,11 @@ export default function SignUp() {
                 />
                 <div className="space-y-2">
                   <FormLabel className={"opacity-0"}>验证码</FormLabel>
-                  <Button variant="default" className="w-full">
+                  <Button
+                    variant="default"
+                    className="w-full"
+                    onClick={handleSendRegisterCaptcha}
+                  >
                     发送验证码
                   </Button>
                 </div>

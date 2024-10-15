@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { signInSchema } from "@/app/sign-in/schema";
+import { signInSchema } from "@/lib/schemas/user";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
@@ -17,8 +17,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { signIn } from "@/lib/service";
+import { useRouter } from "next/navigation";
 
 export default function SignIn() {
+  const router = useRouter();
+
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
@@ -26,10 +30,16 @@ export default function SignIn() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof signInSchema>) {
+  async function onSubmit(values: z.infer<typeof signInSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     console.log(values);
+    try {
+      await signIn(values);
+      router.push("/");
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   return (

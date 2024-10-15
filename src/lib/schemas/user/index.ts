@@ -1,5 +1,26 @@
 import { z } from "zod";
 
+export const signInSchema = z.object({
+  username: z
+    .string()
+    .min(2, {
+      message: "用户名长度不能小于2",
+    })
+    .max(50, {
+      message: "用户名长度不能大于50",
+    }),
+  password: z
+    .string()
+    .min(6, {
+      message: "密码长度不能小于6",
+    })
+    .max(20, {
+      message: "密码长度不能大于20",
+    }),
+});
+
+export type SignInSchema = z.infer<typeof signInSchema>;
+
 export const signUpSchema = z
   .object({
     username: z
@@ -10,7 +31,7 @@ export const signUpSchema = z
       .max(50, {
         message: "用户名长度不能大于50",
       }),
-    nickname: z.string().min(2, {
+    nickName: z.string().min(2, {
       message: "昵称长度不能小于2",
     }),
     password: z
@@ -33,11 +54,12 @@ export const signUpSchema = z
   })
   .refine(
     (data) => {
-      console.log("=>(schema.ts:42) data", data);
-      return data.password !== data.confirmPassword;
+      return data.password === data.confirmPassword;
     },
     {
       message: "两次密码输入不一致",
       path: ["confirmPassword"],
     },
   );
+
+export type SignUpSchema = z.infer<typeof signUpSchema>;
